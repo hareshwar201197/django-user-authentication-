@@ -1,0 +1,43 @@
+# OS X
+.DS_Store
+
+# Python
+*.pyc
+*.patch
+*.pdf
+
+# Django Settings file
+#settings.py
+
+# Development database
+#*.db
+
+# Eclipse/Aptana
+.settings
+
+# svn
+.svn
+
+# svn
+.json
+
+.settings
+# Emacs
+*~
+
+#log files
+*.log
+
+#Editor
+.project
+.pydevproject
+.idea/
+informds.iml
+venv/
+local_settings.py
+
+#cache directories
+app_cache/
+
+#vscode
+.vscode/
