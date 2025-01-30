@@ -55,7 +55,7 @@ ROOT_URLCONF = 'user_auth.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -70,9 +70,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'user_auth.wsgi.application'
 
-#AUTH_USER_MODEL = 'user_app.User'  # Tell Django to use our custom User model
+AUTH_USER_MODEL = 'user_app.User'
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -125,3 +125,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = 'login'
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "hareshwarmali20@gmail.com"  # Replace with your email
+EMAIL_HOST_PASSWORD = "maheshwari20"  # Replace with an app password if using Gmail
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
