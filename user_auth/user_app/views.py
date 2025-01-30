@@ -13,34 +13,26 @@ from .models import User
 from .SignupForm import SignupForm
 from .models import User
 
+
 def signup(request):
     if request.method == 'POST':
         form = SignupForm(request.POST)
         if form.is_valid():
-            # Create the user
-            user = form.save(commit=False)
-            user.set_password(form.cleaned_data['password'])
-            user.is_active = False  # User is inactive until email is verified
-            user.save()
-
-            # Send verification email
-            token = default_token_generator.make_token(user)
-            uid = urlsafe_base64_encode(user.pk.encode())
-            verification_link = f'http://{get_current_site(request).domain}/verify-email/{uid}/{token}/'
-            send_mail(
-                'Verify your email',
-                f'Click the following link to verify your email: {verification_link}',
-                'no-reply@example.com',
-                [user.email],
-                fail_silently=False,
-            )
-            return redirect('email_verification_sent')  # Show confirmation page
+            email = form.cleaned_data['email']
+            if User.objects.filter(email=email).exists():  # Check duplicate emails instead
+                form.add_error('email', 'This email is already registered. Please log in.')
+            else:
+                user = form.save(commit=False)
+                user.username = email  # Use email as username
+                user.set_password(form.cleaned_data['password'])
+                user.is_active = False  # User is inactive until email is verified
+                user.save()
+                send_verification_email(user)
+                return redirect('verification_sent')  # Show confirmation page
     else:
         form = SignupForm()
+
     return render(request, 'signup.html', {'form': form})
-
-
-
 
 
 def verify_email(request, uidb64, token):
@@ -61,7 +53,7 @@ def verify_email(request, uidb64, token):
 
 
 def email_verification_sent(request):
-    return render(request, 'email_verification_sent.html')
+    return render(request, 'verification_sent.html')
 
 
 from django.contrib.auth import authenticate, login
@@ -91,3 +83,29 @@ def about(request):
     return render(request, 'about.html')
 
 
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.template.loader import render_to_string
+from django.contrib.auth.tokens import default_token_generator
+from django.conf import settings
+
+def send_verification_email(user):
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    verification_link = f"http://127.0.0.1:8000/verify/{uidb64}/{token}/"
+
+    subject = "Verify Your Email"
+    message = render_to_string('verification_sent.html', {'user': user, 'verification_link': verification_link})
+
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=False,  # Set to True in production if you don't want errors to break
+    )
+
+
+def delete_user():
+    User.objects.filter(email=['hareshwarmali20@gmail.com']).delete()
