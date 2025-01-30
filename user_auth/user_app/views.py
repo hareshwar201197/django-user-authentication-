@@ -1,6 +1,3 @@
-from django.shortcuts import render
-
-# Create your views here.
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.sites.shortcuts import get_current_site
@@ -8,10 +5,13 @@ from django.core.mail import send_mail
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.template.loader import render_to_string
+from django.conf import settings
 from .models import User
-
 from .SignupForm import SignupForm
-from .models import User
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.forms import AuthenticationForm
 
 
 def signup(request):
@@ -19,7 +19,7 @@ def signup(request):
         form = SignupForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
-            if User.objects.filter(email=email).exists():  # Check duplicate emails instead
+            if User.objects.filter(email=email).exists():  # Check duplicate emails
                 form.add_error('email', 'This email is already registered. Please log in.')
             else:
                 user = form.save(commit=False)
@@ -27,7 +27,7 @@ def signup(request):
                 user.set_password(form.cleaned_data['password'])
                 user.is_active = False  # User is inactive until email is verified
                 user.save()
-                send_verification_email(user)
+                send_verification_email(request, user)  # Pass request for dynamic domain
                 return redirect('verification_sent')  # Show confirmation page
     else:
         form = SignupForm()
@@ -48,17 +48,12 @@ def verify_email(request, uidb64, token):
         user.save()
         return redirect('login')  # Redirect to login page after successful verification
     else:
-        return render(request, 'email_verification_failed.html')
-
+        return render(request, 'email_verification_fail.html')  # Show failure message
 
 
 def email_verification_sent(request):
     return render(request, 'verification_sent.html')
 
-
-from django.contrib.auth import authenticate, login
-from django.shortcuts import render, redirect
-from django.contrib.auth.forms import AuthenticationForm
 
 def user_login(request):
     if request.method == 'POST':
@@ -77,35 +72,33 @@ def user_login(request):
     return render(request, 'login.html', {'form': form})
 
 
-
 @login_required
 def about(request):
     return render(request, 'about.html')
 
 
-from django.core.mail import send_mail
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django.template.loader import render_to_string
-from django.contrib.auth.tokens import default_token_generator
-from django.conf import settings
-
-def send_verification_email(user):
+def send_verification_email(request, user):
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    verification_link = f"http://127.0.0.1:8000/verify/{uidb64}/{token}/"
+
+    current_site = get_current_site(request)  # Get dynamic domain
+    verification_link = f"http://{current_site.domain}/verify_email/{uidb64}/{token}/"
 
     subject = "Verify Your Email"
-    message = render_to_string('verification_sent.html', {'user': user, 'verification_link': verification_link})
+    message = render_to_string('verification_sent.html', {
+        'user': user,
+        'verification_link': verification_link
+    })
 
     send_mail(
         subject,
         message,
         settings.DEFAULT_FROM_EMAIL,
         [user.email],
-        fail_silently=False,  # Set to True in production if you don't want errors to break
+        fail_silently=False,
+        html_message=message  # Ensure the email is sent as HTML
     )
 
 
 def delete_user():
-    User.objects.filter(email=['hareshwarmali20@gmail.com']).delete()
+    User.objects.filter(email__in=['hareshwarmali20@gmail.com']).delete()
