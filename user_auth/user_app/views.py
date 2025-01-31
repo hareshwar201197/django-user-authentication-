@@ -61,16 +61,15 @@ def user_login(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
-            if user is not None and user.is_verified:  # Only allow login if verified
+            user = form.get_user()
+            if user and user.is_active:
                 login(request, user)
                 return redirect('about')
             else:
-                form.add_error(None, "Your email is not verified yet.")
+                messages.error(request, "Your email is not verified yet.")
     else:
         form = AuthenticationForm()
+
     return render(request, 'login.html', {'form': form})
 
 
