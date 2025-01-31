@@ -1,17 +1,16 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
-from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
-from django.template.loader import render_to_string
 from django.conf import settings
 from .models import User
 from .SignupForm import SignupForm
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import login
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib import messages
+from django.urls import reverse
 
 
 def signup(request):
@@ -19,16 +18,18 @@ def signup(request):
         form = SignupForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
-            if User.objects.filter(email=email).exists():  # Check duplicate emails
+            if User.objects.filter(email=email).exists():
                 form.add_error('email', 'This email is already registered. Please log in.')
             else:
                 user = form.save(commit=False)
-                user.username = email  # Use email as username
+                user.username = email
                 user.set_password(form.cleaned_data['password'])
-                user.is_active = False  # User is inactive until email is verified
+                user.is_active = False  # Require email verification
                 user.save()
-                send_verification_email(request, user)  # Pass request for dynamic domain
-                return redirect('verification_sent')  # Show confirmation page
+                send_verification_email(request, user)
+
+                messages.success(request, "Signup successful! Please check your email to verify your account.")
+                return redirect('verification_sent')
     else:
         form = SignupForm()
 
