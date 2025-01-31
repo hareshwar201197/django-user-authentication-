@@ -81,23 +81,19 @@ def about(request):
 def send_verification_email(request, user):
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-
-    current_site = get_current_site(request)  # Get dynamic domain
-    verification_link = f"http://{current_site.domain}/verify_email/{uidb64}/{token}/"
+    verification_link = request.build_absolute_uri(
+        reverse('verify_email', kwargs={'uidb64': uidb64, 'token': token})
+    )
 
     subject = "Verify Your Email"
-    message = render_to_string('verification_sent.html', {
-        'user': user,
-        'verification_link': verification_link
-    })
+    message = f"Hi {user.first_name},\n\nClick the link below to verify your email:\n{verification_link}"
 
     send_mail(
         subject,
         message,
         settings.DEFAULT_FROM_EMAIL,
         [user.email],
-        fail_silently=False,
-        html_message=message  # Ensure the email is sent as HTML
+        fail_silently=False
     )
 
 
