@@ -49,7 +49,8 @@ def verify_email(request, uidb64, token):
         user.save()
         return redirect('login')  # Redirect to login page after successful verification
     else:
-        return render(request, 'email_verification_fail.html')  # Show failure message
+        messages.error(request, "Invalid verification link. Please sign up again.")
+    return redirect('signup')
 
 
 def email_verification_sent(request):
